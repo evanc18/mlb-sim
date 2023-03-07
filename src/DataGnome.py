@@ -38,8 +38,8 @@ class DataGnome:
 		max_chunk = 10
 		dates_chunked = [self.dates[x:x+max_chunk] for x in range(0, len(self.dates), max_chunk)] 
 		for chunk in dates_chunked:
-			print(self.name + " pulling " + str(len(chunk)) + " dates...\n")
+			print(self.name + " pulling " + str(len(chunk)) + " dates...")
 			data = pb.statcast(start_dt=chunk[0],
 				end_dt=chunk[-1],
 				verbose=False)
-			print(self.name + " pulled " + str(len(chunk)) + " dates!\n")
+			print(self.name + " pulled " + str(len(chunk)) + " dates!")

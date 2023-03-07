@@ -9,9 +9,13 @@ from threading import Thread, current_thread
 from DataGnome import DataGnome
 from queue import Queue
 from threading import Thread
+import pybaseball as pb
+import sqlite3 as sql
+import SQLGnome
 
 START_DT = "2022-04-07"
 END_DT = "2022-05-15"
+DB_PATH = "database/mlb_data.db"
 
 def construct_dates(start_dt, end_dt):
 	return pandas.date_range(start_dt, end_dt-dt.timedelta(days=1), freq='d').strftime("%Y-%m-%d").tolist()
@@ -31,9 +35,24 @@ def data_loader(start_dt, end_dt, gn_count):
 	if gn_count<len(gn_ranges):
 		datagnomes[-1].dates = datagnomes[-1].dates + gn_ranges[-1]
 
+	sqlgnome = SQLGnome([], Queue(), DB_PATH)
+	sqlgnome.connect_db()
+	
+	
+	pb.cache.enable()
 	for gn in datagnomes:
-		#gn.pull_statcast()
 		mp.Process(target=gn.pull_statcast, args=()).start()
+
+	
+
+
+
+	
+
+
+
+
 
 if __name__=="__main__":
 	data_loader(start_dt=START_DT, end_dt=END_DT, gn_count=3)
+

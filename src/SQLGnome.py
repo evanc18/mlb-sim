@@ -5,8 +5,9 @@ import itertools
 import contextlib
 import sqlite3 as sql
 import time
+from utils.console_log_utils import printProgressBar
 
-STMT_CREATE_TABLE = """\
+STMT_CREATE_STATCAST = """\
     CREATE TABLE IF NOT EXISTS statcast (
                             pitch_type TEXT,
                             game_date TEXT, 
@@ -97,9 +98,8 @@ STMT_CREATE_TABLE = """\
                             post_fld_score INT,
                             if_fielding_alignment TEXT,
                             of_fielding_alignment TEXT,
-                            days_since_2000 INT,
-                            PRIMARY KEY (game_pk, at_bat_number, pitch_number));)"""
-STMT_INSERT_STCST = """\
+                            PRIMARY KEY (game_pk, at_bat_number, pitch_number));"""
+STMT_INSERT_STATCAST = """\
     INSERT INTO statcast (
                             pitch_type,
                             game_date,
@@ -189,32 +189,42 @@ STMT_INSERT_STCST = """\
                             post_bat_score,
                             post_fld_score,
                             if_fielding_alignment,
-                            of_fielding_alignment, 
-                            days_since_2000)
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,julianday(?) - julianday(?))"""
-
+                            of_fielding_alignment)
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+STMT_DROP_STATCAST = """\
+    DROP TABLE IF EXISTS statcast;
+    """
+STMT_PRINT_STATCAST = """\
+    SELECT * FROM statcast
+    """
+#TODO STMT_CREATE_PITCHING_STATS
 
 class SQLGnome:
-    def __init__(self, q, db_path, conn=None, ins_size=100):
-        self.q = q
+    def __init__(self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000):
+        self.q_in = q_in
         self.db_path = db_path
+        self.stop_term = stop_term
+        self.stop_lim = stop_lim
+        self.stop_n = 0
         self.conn = conn
         self.ins_size = ins_size
 
+    
     def connect_db(self):
         """Connects to SQLite database
 
         Returns:
                 bool: connection success
         """
-        success = False
+
+        print("Attempting to connect to SQL database: {}".format(self.db_path))
         try:
             self.conn = sql.connect(self.db_path)
-            success = True
+            print("Database connection successful!")
+            return True
         except Exception as e:
             print(f"Fatal: SQL Database failed to connect! '{e}'")
-
-        return success
+            return False
 
     def execute_query(self, q_string):
         """Executes a sql query
@@ -233,26 +243,61 @@ class SQLGnome:
         except Exception as e:
             print(f"Error in execution of query: '{e}")
         return success
+    
+    def print_table(self):
+        try:
+            c = self.conn.cursor()
+            c.execute(STMT_PRINT_STATCAST)
+            print(c.fetchall())
+            success = True
+        except Exception as e:
+            print(f"Error in execution of query: '{e}")
+        return success
 
     def insert_items_from_q(self):
-        self.conn = self.connect_db()
         cur = self.conn.cursor()
+        self.execute_query(STMT_DROP_STATCAST)
+        self.execute_query(STMT_CREATE_STATCAST)
+        received = 0
         inserted = 0
-        time.sleep(10)
-
+        q_list = []
         while True:
-            if self.q.empty():
+            if self.q_in.empty():
+                print("SQL Gnome has no data to push, sleeping...")
                 time.sleep(3)
             else:
-                data_in = self.q.get()
+                data_in = self.q_in.get()
+                received = self.q_in.qsize() + inserted
+                q_list.append(data_in)
+                ins_to_stop = False
 
-    def insert(self, cur, q_string, item):
+                if(data_in == self.stop_term):
+                    q_list.pop()
+                    self.stop_n += 1
+                    if self.stop_lim == self.stop_n:
+                        inserted += self.insert_many(cur, STMT_INSERT_STATCAST, q_list)
+                        received = self.q_in.qsize() + inserted
+                        print('\nSQL Gnome finished pushing {}/{} pitches!'.format(inserted, received))
+                        break
+                    else:
+                        ins_to_stop = True
+
+                if len(q_list) > self.ins_size | ins_to_stop:
+                    #print("SQL Gnome pushing {} items".format(self.ins_size))
+                    inserted += self.insert_many(cur, STMT_INSERT_STATCAST, q_list[0:self.ins_size])
+                    printProgressBar(inserted, received, prefix='SQL Gnome pushing {}/{}'.format(inserted,received))
+                    q_list = []
+                    ins_to_stop = False
+
+        #self.print_table()
+    
+    def insert_many(self, cur, q_string, items):
         try:
-            cur.execute(q_string, item)
-            cur.commit()
-            return True
-        except Error as e:
-            print("Could not insert \n{}".format(item))
+            cur.executemany(q_string, items)
+            self.conn.commit()
+            return len(items)
+        except Exception as e:
+            #print("Could not insert \n{}".format(items))
             print("\t Error: {}".format(e))
-            return False
+            return 0
                 

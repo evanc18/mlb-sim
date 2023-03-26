@@ -7,7 +7,12 @@ import sqlite3 as sql
 import time
 from utils.console_log_utils import printProgressBar
 
-STMT_CREATE_STATCAST = """\
+"""
+All SQL statements for pushing, accessing, etc. Probably will find a better place for these
+"""
+sql_statements = {
+    "statcast": {
+       "CREATE": """\
     CREATE TABLE IF NOT EXISTS statcast (
                             pitch_type TEXT,
                             game_date TEXT, 
@@ -98,8 +103,8 @@ STMT_CREATE_STATCAST = """\
                             post_fld_score INT,
                             if_fielding_alignment TEXT,
                             of_fielding_alignment TEXT,
-                            PRIMARY KEY (game_pk, at_bat_number, pitch_number));"""
-STMT_INSERT_STATCAST = """\
+                            PRIMARY KEY (game_pk, at_bat_number, pitch_number));""",
+       "INSERT": """\
     INSERT INTO statcast (
                             pitch_type,
                             game_date,
@@ -190,17 +195,198 @@ STMT_INSERT_STATCAST = """\
                             post_fld_score,
                             if_fielding_alignment,
                             of_fielding_alignment)
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
-STMT_DROP_STATCAST = """\
-    DROP TABLE IF EXISTS statcast;
-    """
-STMT_PRINT_STATCAST = """\
-    SELECT * FROM statcast
-    """
-#TODO STMT_CREATE_PITCHING_STATS
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        "DROP": """\
+            DROP TABLE IF EXISTS statcast;
+        """,
+        "PRINT": """\
+            SELECT * FROM statcast
+        """
+    },
+    "pitching_stats_range": {
+        "CREATE": """\
+            CREATE TABLE IF NOT EXISTS pitching_stats_range (
+            Name TEXT,
+            Age INT,
+            Days INT,
+            Lev TEXT,
+            Tm TEXT,
+            G INT,
+            GS INT,
+            W INT,
+            L INT,
+            SV INT,
+            IP FLOAT,
+            H INT,
+            R INT,
+            ER INT,
+            BB INT,
+            SO INT,
+            HR INT,
+            HBP INT,
+            ERA FLOAT,
+            AB INT,
+            Doubles INT,
+            Triples INT,
+            IBB INT,
+            GDP INT,
+            SF INT,
+            SB INT,
+            CS INT,
+            PO INT,
+            BF INT,
+            Pit INT,
+            Str FLOAT,
+            StL FLOAT,
+            StS FLOAT,
+            GB_FB FLOAT,
+            LD FLOAT,
+            PU FLOAT,
+            WHIP FLOAT,
+            BAbip FLOAT,
+            SO9 FLOAT,
+            SO_W FLOAT,
+            mlbID, INT
+            );
+            """,
+        "INSERT": """\
+            INSERT INTO pitching_stats_range (
+                Name,
+                Age,
+                Days,
+                Lev,
+                Tm,
+                G,
+                GS,
+                W,
+                L,
+                SV,
+                IP,
+                H,
+                R,
+                ER,
+                BB,
+                SO,
+                HR,
+                HBP,
+                ERA,
+                AB,
+                Doubles,
+                Triples,
+                IBB,
+                GDP,
+                SF,
+                SB,
+                CS,
+                PO,
+                BF,
+                Pit,
+                Str,
+                StL,
+                StS,
+                GB_FB,
+                LD,
+                PU,
+                WHIP,
+                BAbip,
+                SO9,
+                SO_W,
+                mlbID)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+        "DROP": """\
+            DROP TABLE IF EXISTS pitching_stats_range;
+            """,
+        "PRINT": """\
+            SELECT * FROM pitching_stats_range
+            """
+    },
+    "batting_stats_range": { 
+        "CREATE": """\
+            CREATE TABLE IF NOT EXISTS batting_stats_range (
+                Name TEXT,
+                Age INT,
+                Days INT,
+                Lev TEXT,
+                Tm TEXT,
+                G INT,
+                PA INT,
+                AB INT,
+                R INT,
+                H INT,
+                Doubles INT,
+                Triples INT,
+                HR INT,
+                RBI INT,
+                BB INT,
+                IBB INT,
+                SO INT,
+                HBP INT,
+                SH INT,
+                SF INT,
+                GDP INT,
+                SB INT,
+                CS INT,
+                BA FLOAT,
+                OBP FLOAT,
+                SLG FLOAT,
+                OPS FLOAT,
+                mlbID INT
+            );
+            """,
+        "INSERT": """\
+            INSERT INTO batting_stats_range (
+                Name,
+                Age,
+                Days,
+                Lev,
+                Tm,
+                G,
+                PA,
+                AB,
+                R,
+                H,
+                Doubles,
+                Triples,
+                HR,
+                RBI,
+                BB,
+                IBB,
+                SO,
+                HBP,
+                SH,
+                SF,
+                GDP,
+                SB,
+                CS,
+                BA,
+                OBP,
+                SLG,
+                OPS,
+                mlbID)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+        "DROP": """\
+            DROP TABLE IF EXISTS batting_stats_range;
+            """,
+        "PRINT": """\
+            SELECT * FROM batting_stats_range
+            """
+    }
+}
+
+
+
+# TODO STMT_CREATE_STATCAST_PITCHING
+# TODO STMT_INSERT_STATCAST_PITCHING
+# TODO STMT_DROP_STATCAST_PITCHING
+# TODO STMT_PRINT_STATCAST_PITCHING
+
 
 class SQLGnome:
-    def __init__(self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000):
+    def __init__(
+        self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000
+    ):
         self.q_in = q_in
         self.db_path = db_path
         self.stop_term = stop_term
@@ -209,7 +395,10 @@ class SQLGnome:
         self.conn = conn
         self.ins_size = ins_size
 
-    
+    def reset_stop_lim(self, lim):
+        self.stop_lim = lim
+        self.stop_n = 0
+
     def connect_db(self):
         """Connects to SQLite database
 
@@ -217,7 +406,9 @@ class SQLGnome:
                 bool: connection success
         """
 
-        print("Attempting to connect to SQL database: {}".format(self.db_path))
+        print(
+            "Attempting to connect to SQL database: {}".format(self.db_path)
+        )
         try:
             self.conn = sql.connect(self.db_path)
             print("Database connection successful!")
@@ -243,24 +434,26 @@ class SQLGnome:
         except Exception as e:
             print(f"Error in execution of query: '{e}")
         return success
-    
-    def print_table(self):
+
+    def print_table(self, table):
         try:
             c = self.conn.cursor()
-            c.execute(STMT_PRINT_STATCAST)
+            c.execute(table["PRINT"])
             print(c.fetchall())
             success = True
         except Exception as e:
             print(f"Error in execution of query: '{e}")
         return success
 
-    def insert_items_from_q(self):
+    def insert_items_from_q(self, table):
+        table = sql_statements[table]
         cur = self.conn.cursor()
-        self.execute_query(STMT_DROP_STATCAST)
-        self.execute_query(STMT_CREATE_STATCAST)
+        self.execute_query(table["DROP"])
+        self.execute_query(table["CREATE"])
         received = 0
         inserted = 0
         q_list = []
+        print(self.q_in.qsize())
         while True:
             if self.q_in.empty():
                 print("SQL Gnome has no data to push, sleeping...")
@@ -271,33 +464,47 @@ class SQLGnome:
                 q_list.append(data_in)
                 ins_to_stop = False
 
-                if(data_in == self.stop_term):
+                if data_in == self.stop_term:
                     q_list.pop()
                     self.stop_n += 1
                     if self.stop_lim == self.stop_n:
-                        inserted += self.insert_many(cur, STMT_INSERT_STATCAST, q_list)
+                        inserted += self.insert_many(
+                            cur, table["INSERT"], q_list
+                        )
                         received = self.q_in.qsize() + inserted
-                        print('\nSQL Gnome finished pushing {}/{} pitches!'.format(inserted, received))
-                        break
+                        print(
+                            "\nSQL Gnome finished pushing {}/{} entries!".format(
+                                inserted, received
+                            )
+                        )
+                        #self.print_table(table)
+                        return False
                     else:
                         ins_to_stop = True
 
                 if len(q_list) > self.ins_size | ins_to_stop:
-                    #print("SQL Gnome pushing {} items".format(self.ins_size))
-                    inserted += self.insert_many(cur, STMT_INSERT_STATCAST, q_list[0:self.ins_size])
-                    printProgressBar(inserted, received, prefix='SQL Gnome pushing {}/{}'.format(inserted,received))
+                    # print("SQL Gnome pushing {} items".format(self.ins_size))
+                    inserted += self.insert_many(
+                        cur, table["INSERT"], q_list[0 : self.ins_size]
+                    )
+                    printProgressBar(
+                        inserted,
+                        received,
+                        prefix="SQL Gnome pushing {}/{}".format(
+                            inserted, received
+                        ),
+                    )
                     q_list = []
                     ins_to_stop = False
 
-        #self.print_table()
-    
+        # self.print_table()
+
     def insert_many(self, cur, q_string, items):
         try:
             cur.executemany(q_string, items)
             self.conn.commit()
             return len(items)
         except Exception as e:
-            #print("Could not insert \n{}".format(items))
+            # print("Could not insert \n{}".format(items))
             print("\t Error: {}".format(e))
             return 0
-                

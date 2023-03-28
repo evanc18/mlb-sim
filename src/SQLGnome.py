@@ -372,21 +372,54 @@ sql_statements = {
         "PRINT": """\
             SELECT * FROM batting_stats_range
             """
+    },
+    "chadwick": { 
+        "CREATE": """\
+            CREATE TABLE IF NOT EXISTS chadwick(
+                name_last TEXT,
+                name_first TEXT,
+                key_mlbam INT,
+                key_retro TEXT,
+                key_bbref TEXT,
+                key_fangraphs INT,
+                mlb_played_first INT,
+                mlb_played_last INT
+            );
+            """,
+        "INSERT": """\
+            INSERT INTO chadwick (
+                name_last,
+                name_first,
+                key_mlbam,
+                key_retro,
+                key_bbref,
+                key_fangraphs,
+                mlb_played_first,
+                mlb_played_last)
+                VALUES(?,?,?,?,?,?,?,?)
+            """,
+        "DROP": """\
+            DROP TABLE IF EXISTS chadwick;
+            """,
+        "PRINT": """\
+            SELECT * FROM chadwick
+            """
     }
 }
 
 
-
-# TODO STMT_CREATE_STATCAST_PITCHING
-# TODO STMT_INSERT_STATCAST_PITCHING
-# TODO STMT_DROP_STATCAST_PITCHING
-# TODO STMT_PRINT_STATCAST_PITCHING
-
-
 class SQLGnome:
-    def __init__(
-        self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000
-    ):
+    def __init__(self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000):
+        """Gnome for pulling data from queue and pushing to SQL server
+
+        Args:
+            q_in (Queue): inbound queue
+            db_path (str): path to database
+            stop_term (str): stop indicator
+            stop_lim (int): number of stop indicators before finished
+            conn (Connection, optional): database connection. Defaults to None.
+            ins_size (int, optional): insert size. Defaults to 10000.
+        """
         self.q_in = q_in
         self.db_path = db_path
         self.stop_term = stop_term
@@ -396,6 +429,11 @@ class SQLGnome:
         self.ins_size = ins_size
 
     def reset_stop_lim(self, lim):
+        """Reset the stop indicator limit
+
+        Args:
+            lim (int): new limit
+        """
         self.stop_lim = lim
         self.stop_n = 0
 
@@ -418,13 +456,13 @@ class SQLGnome:
             return False
 
     def execute_query(self, q_string):
-        """Executes a sql query
+        """Executes a SQL query
 
         Args:
             q_string (str): Query string
 
         Returns:
-            _type_: _description_
+            bool: success of execution
         """
         success = False
         try:
@@ -436,6 +474,14 @@ class SQLGnome:
         return success
 
     def print_table(self, table):
+        """Prints SQL table
+
+        Args:
+            table (str): table to print
+
+        Returns:
+            bool: success of execution
+        """
         try:
             c = self.conn.cursor()
             c.execute(table["PRINT"])
@@ -446,10 +492,19 @@ class SQLGnome:
         return success
 
     def insert_items_from_q(self, table):
+        """Insert items from the inbound queue into table until stop limit is reached
+
+        Args:
+            table (str): SQL table to insert into
+
+        Returns:
+            bool: SQL gnome is working
+        """
         table = sql_statements[table]
         cur = self.conn.cursor()
         self.execute_query(table["DROP"])
         self.execute_query(table["CREATE"])
+
         received = 0
         inserted = 0
         q_list = []
@@ -477,7 +532,6 @@ class SQLGnome:
                                 inserted, received
                             )
                         )
-                        #self.print_table(table)
                         return False
                     else:
                         ins_to_stop = True
@@ -500,6 +554,16 @@ class SQLGnome:
         # self.print_table()
 
     def insert_many(self, cur, q_string, items):
+        """Executes insertion query for many items
+
+        Args:
+            cur (Cursor): SQL cursor
+            q_string (str): insert query
+            items (List): list of items to insert
+
+        Returns:
+            int: items inserted
+        """
         try:
             cur.executemany(q_string, items)
             self.conn.commit()

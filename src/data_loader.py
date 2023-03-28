@@ -1,4 +1,4 @@
-__author__ = "Evan Chase, Connor Heaton"
+__author__ = "Evan Chase"
 
 import datetime as dt
 import pandas
@@ -16,8 +16,8 @@ import pybaseball as pb
 import sqlite3 as sql
 from SQLGnome import SQLGnome
 
-START_DT = "2021-04-07"
-END_DT = "2022-04-15"
+START_DT = "2021-03-25"
+END_DT = "2021-12-01"
 DB_PATH = "database/mlb_data.db"
 CACHE = True
 
@@ -40,13 +40,10 @@ def construct_dates(start_dt, end_dt):
 
 
 def data_loader(args):
-    """Pulls data from statcast using DataGnomes and
-    pushes to SQLite database
+    """Receives outbound DataGnome items for chosen tables and pushes out to SQLWorker
 
     Args:
-        start_dt (str): start date
-        end_dt (str): end date
-        gn_count (int): number of data gnomes
+        args: command line args of chosen tables and dates
     """
 
     stop_term = "<END>"
@@ -86,25 +83,23 @@ def data_loader(args):
         print("Starting statcast threads...")
         while working:
             gn_process = [
-                Thread(target=gn.statcast, args=())
+                Thread(target=gn.pull_statcast, args=())
                 for gn in datagnomes
             ]
-
             for p in gn_process:
                 p.start()
-
-            time.sleep(5)
+            time.sleep(3)
             working = sqlgnome.insert_items_from_q("statcast")
         working = True
 
-    #Aggregate data pulls only use one gnome
+    #Aggregate and small tables pull only use one gnome
     sqlgnome.reset_stop_lim(1)
     if args.pitching_stats_range:
         print("Starting pitching stats range thread...")
         while working:
             gn_process = Thread(target=datagnomes[0].pull_pitching_stats_range, args=())
             gn_process.start()
-            time.sleep(5)
+            time.sleep(3)
             working = sqlgnome.insert_items_from_q("pitching_stats_range")
         working = True
     
@@ -114,8 +109,17 @@ def data_loader(args):
         while working:
             gn_process = Thread(target=datagnomes[0].pull_batting_stats_range, args=())
             gn_process.start()
-            time.sleep(5)
+            time.sleep(3)
             working = sqlgnome.insert_items_from_q("batting_stats_range")
+    
+    sqlgnome.reset_stop_lim(1)
+    if args.chadwick:
+        print("Starting chadwick thread...")
+        while working:
+            gn_process = Thread(target=datagnomes[0].pull_chadwick, args=())
+            gn_process.start()
+            time.sleep(3)
+            working = sqlgnome.insert_items_from_q("chadwick")
 
 
 if __name__ == "__main__":
@@ -171,6 +175,13 @@ if __name__ == "__main__":
         default=False,
         required=False,
         help="aggregate batting stats over given time period",
+    )
+    parser.add_argument(
+        "--chadwick",
+        metavar="path",
+        default=False,
+        required=False,
+        help="chadwick register people info",
     )
     args = parser.parse_args()
     data_loader(args)

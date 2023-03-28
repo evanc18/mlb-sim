@@ -20,6 +20,16 @@ def check_nan_value(x):
 
 class DataGnome:
     def __init__(self, q_out, stop_term, dates, name, id, max_chunk=10):
+        """Gnome for pulling data and pushing to outbound queue
+
+        Args:
+            q_out (Queue): queue for pulling
+            stop_term (str): stop indicator 
+            dates (List): list of dates range to pull 
+            name (str): name identifier
+            id (int): id identifier
+            max_chunk (int, optional): maximum pull range size. Defaults to 10.
+        """
         self.q_out = q_out
         self.stop_term = stop_term
         self.dates = dates
@@ -34,6 +44,7 @@ class DataGnome:
         self.n_dates_processed = 0
 
     def log_progress(self):
+        """Prints progress of pull"""
         print("{} pulled {}/{} dates!".format(self.name, self.n_dates_processed, len(self.dates)))
 
     def pull_statcast(self):
@@ -54,10 +65,7 @@ class DataGnome:
                 self.n_items_processed += 1
             self.n_dates_processed += len(chunk)
             self.log_progress()
-        self.q_out.put(self.stop_term)
-
-    #TODO pull_chadwick(self)
-    # pb.chadwick_register(save=True) save to disk?    
+        self.q_out.put(self.stop_term)   
 
     def pull_pitching_stats_range(self):
         """Pushes league-wide season level aggregate pitching data, one row per player per time range from BaseballReference 
@@ -86,6 +94,15 @@ class DataGnome:
             item_data = [
                 None if check_nan_value(mlbID) else mlbID for mlbID in item_data
             ]
+            self.q_out.put(item_data)
+        self.q_out.put(self.stop_term)
+
+    def pull_chadwick(self):
+        """Pushes the Chadwick register of people info
+        """
+        data = pb.chadwick_register()
+        for item_data in data.values.tolist():
+            item_data = [None if check_nan_value(key_fangraphs) else key_fangraphs for key_fangraphs in item_data]
             self.q_out.put(item_data)
         self.q_out.put(self.stop_term)
 

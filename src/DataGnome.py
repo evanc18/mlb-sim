@@ -19,7 +19,7 @@ def check_nan_value(x):
 
 
 class DataGnome:
-    def __init__(self, q_out, stop_term, dates, name, id, max_chunk=10):
+    def __init__(self, q_out, dates, name, id, stop_term='<END>', max_chunk=10):
         """Gnome for pulling data and pushing to outbound queue
 
         Args:
@@ -97,15 +97,15 @@ class DataGnome:
             self.q_out.put(item_data)
         self.q_out.put(self.stop_term)
 
-    def pull_chadwick(self):
+    def pull_chadwick(self, save=True):
         """Pushes the Chadwick register of people info
         """
-        data = pb.chadwick_register()
+        data = pb.chadwick_register(save=save)
         for item_data in data.values.tolist():
             item_data = [None if check_nan_value(key_fangraphs) else key_fangraphs for key_fangraphs in item_data]
             self.q_out.put(item_data)
         self.q_out.put(self.stop_term)
-
+    
 
     # TODO pull_statcast_player
     # id = pb.playerid_lookup('kershaw', 'clayton')

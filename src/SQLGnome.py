@@ -200,7 +200,11 @@ sql_statements = {
             DROP TABLE IF EXISTS statcast;
         """,
         "PRINT": """\
+        
             SELECT * FROM statcast
+        """,
+        "VERBOSE": """\
+        pitch_type, game_date, player_name, batter, pitcher, events, home_team, away_team, balls, strikes, home_score, away_score, bat_score, at_bat_number
         """
     },
     "pitching_stats_range": {
@@ -409,7 +413,7 @@ sql_statements = {
 
 
 class SQLGnome:
-    def __init__(self, q_in, db_path, stop_term, stop_lim, conn=None, ins_size=10000):
+    def __init__(self, q_in, db_path, stop_lim, stop_term='<END>', conn=None, ins_size=10000):
         """Gnome for pulling data from queue and pushing to SQL server
 
         Args:
@@ -472,6 +476,27 @@ class SQLGnome:
         except Exception as e:
             print(f"Error in execution of query: '{e}")
         return success
+    
+    def filter_rows(self, table, filter=None, verbose=True):
+        sql_table = sql_statements[table]
+        try:
+            c = self.conn.cursor()
+            if(verbose):
+                select = "SELECT *"
+            else:
+                select = "SELECT " + sql_table["VERBOSE"]
+        
+            if filter:
+                c.execute(select + " FROM " + table + " WHERE "+filter)
+            else:
+                c.execute("SELECT * FROM "+table)
+
+            rows = c.fetchall()
+            keys = list(map(lambda x: x[0], c.description))
+            return rows, keys
+        except Exception as e:
+            print(f"Error in execution of query: '{e}")
+
 
     def print_table(self, table):
         """Prints SQL table

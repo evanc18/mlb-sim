@@ -46,7 +46,7 @@ def data_loader(args):
         args: command line args of chosen tables and dates
     """
 
-    stop_term = "<END>"
+    DB_PATH = args.db
     start_dt = dt.datetime.strptime(args.start_dt, "%Y-%m-%d")
     end_dt = dt.datetime.strptime(args.end_dt, "%Y-%m-%d")
     gn_count = args.gn_count
@@ -63,7 +63,7 @@ def data_loader(args):
     f = open("utils/gnome_names.json")
     gn_names = random.sample(json.load(f), gn_count)
     datagnomes = [
-        DataGnome(q, stop_term, gn_dates[gn_id], gn_names[gn_id], gn_id)
+        DataGnome(q, gn_dates[gn_id], gn_names[gn_id], gn_id)
         for gn_id in range(gn_count)
     ]
 
@@ -76,7 +76,7 @@ def data_loader(args):
         pb.cache.enable()
 
     working = True
-    sqlgnome = SQLGnome(q, DB_PATH, stop_term, gn_count)
+    sqlgnome = SQLGnome(q, DB_PATH, gn_count)
     sqlgnome.connect_db()
 
     if args.statcast:
@@ -124,6 +124,14 @@ def data_loader(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pull various mlb data")
+    parser.add_argument(
+        "--db",
+        metavar="path",
+        default=DB_PATH,
+        required=False,
+        type=str,
+        help='path to db where tables will be created',
+    )
     parser.add_argument(
         "--start_dt",
         metavar="path",

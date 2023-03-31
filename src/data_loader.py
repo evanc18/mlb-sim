@@ -121,6 +121,13 @@ def data_loader(args):
             time.sleep(3)
             working = sqlgnome.insert_items_from_q("chadwick")
 
+    if args.live_schedule:
+        datagnomes[0].pull_live_schedule()
+    
+    if args.live_game:
+        datagnomes[0].pull_live_game(args.live_game)
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pull various mlb data")
@@ -190,6 +197,20 @@ if __name__ == "__main__":
         default=False,
         required=False,
         help="chadwick register people info",
+    )
+    parser.add_argument(
+        "--live_schedule",
+        metavar="path",
+        default=False,
+        required=False,
+        help="today's live lineups and games",
+    )
+    parser.add_argument(
+        "--live_game",
+        metavar="path",
+        default=0,
+        required=False,
+        help="live game data",
     )
     args = parser.parse_args()
     data_loader(args)

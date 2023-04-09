@@ -1,24 +1,24 @@
-//TODO run server locally for debugging and feature testing
-let port_ui = 4000;
-let port_server = 5000;
-
-let http = require('http')
-let connect = require('connect');
-const { platform } = require('os');
 const express = require('express');
 
-function createServer() {
-    http.createServer(function(req, ses) {
+const app = express();
 
-    }).listen(port_server)
-}
+//Define port(s)
+const port = process.env.PORT || 3000
 
-createServer()
+//Config
+const env = app.get('env')
+console.log(env)
 
-let app = connect()
-http.createServer(app).listen(port_ui);
-console.log('Client listening on port ' + port_ui + '...');
+// Serve static files
+app.use(express.static('public'));
+app.use(express.static('src'));
 
-const os = platform()
-//const url = 'http://localhost:' + port_ui
-//window.open(url)
+// Serve the index.html file for all requests
+app.get('/', (req, res) => {
+    res.sendFile('index.html');
+});
+
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}...`);
+});

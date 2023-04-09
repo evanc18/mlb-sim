@@ -1,4 +1,4 @@
-import React from "react";
+const React = require('react')
 //import { ajax } from "jquery";
 
 class App extends React.Component {

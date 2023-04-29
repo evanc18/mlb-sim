@@ -1,25 +1,29 @@
 {
   "name": "mlb-sim-ui",
-  "version": "1.0.0",
-  "description": "#TODO Requirements",
-  "main": "server.js",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently 'vite' 'nodemon Server.ts'",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
-    "@mui/material": "^5.11.15",
-    "config": "^3.3.9",
-    "connect": "^3.7.0",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.12.2",
     "express": "^4.18.2",
-    "http": "0.0.1-security",
-    "open": "^9.1.0",
-    "os": "^0.1.2",
+    "firebase": "^9.21.0",
+    "mui": "^0.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "author": "Evan Chase",
-  "license": "ISC"
+  "devDependencies": {
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^3.1.0",
+    "typescript": "^4.9.3",
+    "vite": "^4.2.0"
+  }
 }

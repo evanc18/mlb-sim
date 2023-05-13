@@ -40,17 +40,19 @@ const NavBar = () => {
     };
   
     return (
-      <AppBar position="static">
+      <AppBar position="static" sx={{backgroundColor: 'green'}}>
         <Container maxWidth="xl">
-          <Toolbar disableGutters>
-            <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+          <Toolbar disableGutters >
+            <div style={{marginRight: '30px', marginTop: '10px', marginBottom: '10px'}}>
+            <img className='nav-logo' src='../src/assets/gnome.png' width='40' height= '70'></img>
+            </div>
             <Typography
               variant="h6"
               noWrap
               component="a"
               href="/"
               sx={{
-                mr: 2,
+                mr: 3,
                 display: { xs: 'none', md: 'flex' },
                 fontFamily: 'monospace',
                 fontWeight: 700,
@@ -59,7 +61,7 @@ const NavBar = () => {
                 textDecoration: 'none',
               }}
             >
-              LOGO
+              Gnome Baseball
             </Typography>
   
             <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>

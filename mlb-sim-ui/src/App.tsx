@@ -23,7 +23,7 @@ export default class App extends Component<{}, AppState> {
     }
 
     render() {
-        if (!this.state.user) {
+        if (!this.state.user && process.env.NODE_ENV !== 'development') {
             return (
                 <div style={{
                     backgroundImage: `url(${splash})`,
@@ -38,7 +38,11 @@ export default class App extends Component<{}, AppState> {
                     <Login onSignIn={user => this.setState({ user })} />
                 </div>
             )
+        } else {
+            //const displayName = this.state.user.displayName;
+            //const profilePhoto = this.state.user.photoURL;
+            return <NavBar></NavBar>
         }
-        return <NavBar></NavBar>
+
     }
 }

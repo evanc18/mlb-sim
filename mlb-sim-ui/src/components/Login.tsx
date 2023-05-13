@@ -1,78 +1,118 @@
 import { Grid, TextField, Button, Typography, Link, Paper, Container, Alert } from "@mui/material";
 import { auth, firestore } from '../Firebase';
-import { sendPasswordResetEmail, signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, UserCredential } from "firebase/auth";
 import { Fragment, useEffect, useState } from "react";
+import Recaptcha from "./Recaptcha";
 
 interface LoginProps {
     onSignIn: (user: any) => void;
 }
 
 interface LoginState {
+    user: any;
     username: string;
     password: string;
     confirmPassword: string;
+    attempts: number;
+    captcha: boolean;
+    firstName: string;
+    lastName: string;
+    favoriteTeam: string;
+    profilePic: any;
+    profileCreated: boolean;
     errorAlert: { visible: boolean, type: any, text: string };
     mode: string;
 }
 
 const Login = ({ onSignIn }: LoginProps) => {
 
+    const recaptchaSiteKey = '6LfSduIlAAAAAIXECR84sRwJD-YnNXJ3m9A2BH7V';
+    const errorAlertClear = { visible: false, type: 'error', text: '' };
+
     const [state, setState] = useState<LoginState>({
+        user: undefined,
         username: '',
         password: '',
         confirmPassword: '',
-        errorAlert: { visible: false, type: 'error', text: '' },
+        attempts: 0,
+        captcha: false,
+        firstName: '',
+        lastName: '',
+        favoriteTeam: '',
+        profilePic: '',
+        profileCreated: false,
+        errorAlert: errorAlertClear,
         mode: 'sign-in'
     });
 
-
-
-    const handleSubmit = (event) => {
+    const handleSubmit = (event: Event) => {
+        console.log(state.attempts)
+        setState(prevState => ({ ...prevState, attempts: prevState.attempts + 1 }));
+        if (state.attempts === 3) {
+            setState(prevState => ({ ...prevState, captcha: true }));
+        }
         event.preventDefault();
         if (state.mode === 'sign-in') {
             handleSignIn();
         } else if (state.mode === 'create-account') {
             handleSignUp();
+        } else if (state.mode === 'first-time-setup') {
+            handleFirstTimeSetup();
         } else if (state.mode === 'reset-password') {
             handlePasswordReset();
         }
     }
 
     const handleSignIn = () => {
-        signInWithEmailAndPassword(auth, state.username, state.password)
-            .then(
-                (userCredential: UserCredential) => {
-                    const user = userCredential.user;
-                    console.log(`Signed in as ${user.email}`);
-                    onSignIn(user);
-                })
-            .catch(error => {
-                let message = 'Fatal! firebase/auth error in login of user'
-                if (error.code === 'auth/user-disabled') {
-                    message = 'Email has been disabled.';
-                } else if (error.code === 'auth/invalid-email') {
-                    message = 'Please enter a valid email address.'
-                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    message = 'Email or password incorrect.'
-                }
-                setState({
-                    ...state, errorAlert: {
-                        visible: true,
-                        type: 'error',
-                        text: message
-                    }
-                });
-            });
-    }
 
-    const handleSignUp = () => {
-        if (state.password === state.confirmPassword) {
-            createUserWithEmailAndPassword(auth, state.username, state.password)
+        if (state.captcha) {
+            setState({
+                ...state, errorAlert: {
+                    visible: true,
+                    type: 'error',
+                    text: 'Please complete the reCAPTCHA before signing in.'
+                }
+            });
+        } else {
+
+            signInWithEmailAndPassword(auth, state.username, state.password)
                 .then(
                     (userCredential: UserCredential) => {
                         const user = userCredential.user;
-                        console.log(`Signed up as ${user.email}`);
+                        console.log(`Signed in as ${user.email}`);
                         onSignIn(user);
+                    })
+                .catch(error => {
+                    let message = 'Fatal! firebase/auth error in login of user'
+                    if (error.code === 'auth/user-disabled') {
+                        message = 'Email has been disabled.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = 'Please enter a valid email address.'
+                    } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        message = 'Email or password incorrect.'
+                    }
+                    setState({
+                        ...state, errorAlert: {
+                            visible: true,
+                            type: 'error',
+                            text: message
+                        }
+                    });
+                });
+        }
+    }
+
+    const handleSignUp = () => {
+        debugger;
+        if (state.profileCreated) {
+            updateProfile(state.user, { displayName: state.firstName })
+            onSignIn(state.user)
+        }
+        else if (state.password === state.confirmPassword) {
+            createUserWithEmailAndPassword(auth, state.username, state.password)
+                .then(
+                    (userCredential: UserCredential) => {
+                        setState({ ...state, errorAlert: errorAlertClear, user: userCredential.user, mode: 'first-time-setup' })
                     })
                 .catch(error => {
                     let message = 'Fatal! firebase/auth error in creation of user'
@@ -92,6 +132,11 @@ const Login = ({ onSignIn }: LoginProps) => {
                     })
                 });
         }
+    }
+
+    const handleFirstTimeSetup = () => {
+        setState({ ...state, profileCreated: true }, handleSignUp())
+        //handleSignUp()
     }
 
     const handlePasswordReset = () => {
@@ -125,10 +170,12 @@ const Login = ({ onSignIn }: LoginProps) => {
 
     let annotation;
     let errorAlertElement = <Grid item xs={12}><Alert severity={state.errorAlert.type}>{state.errorAlert.text}</Alert></Grid>;
+    let captchaElement = <Recaptcha sitekey={recaptchaSiteKey} onVerify={() => setState({ ...state, attempts: 0, captcha: false, errorAlert: { visible: false, type: 'error', text: '' } })} />
 
     if (state.mode === 'create-account') {
         annotation =
             <Fragment>
+                <Grid item xs={12}><Typography align="center" variant="h4">Create Account</Typography></Grid>
                 <Grid item xs={12}>
                     <TextField
                         label="Email"
@@ -181,6 +228,7 @@ const Login = ({ onSignIn }: LoginProps) => {
     } else if (state.mode === 'reset-password') {
         annotation =
             <Fragment>
+                <Grid item xs={12}><Typography align="center" variant="h4">Reset Password</Typography></Grid>
                 <Grid item xs={12}>
                     <TextField
                         label="Email"
@@ -207,9 +255,41 @@ const Login = ({ onSignIn }: LoginProps) => {
                     </Typography>
                 </Grid>
             </Fragment>
+    } else if (state.mode === 'first-time-setup') {
+        annotation =
+            <Fragment>
+                <Grid item xs={12}><Typography align="center" variant="h4">Welcome!</Typography></Grid>
+                <Grid item xs={12}><Typography align="center" variant="h6">Let's get to know each other</Typography></Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        label="First Name"
+                        variant="outlined"
+                        fullWidth
+                        required
+                        value={state.firstName}
+                        onChange={(event) => setState({ ...state, firstName: event.target.value })}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        label="Last Name"
+                        variant="outlined"
+                        fullWidth
+                        required
+                        value={state.lastName}
+                        onChange={(event) => setState({ ...state, lastName: event.target.value })}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Button variant="contained" color="primary" fullWidth type="submit">
+                        Save Profile
+                    </Button>
+                </Grid>
+            </Fragment>
     } else {
         annotation =
             <Fragment>
+                <Grid item xs={12}><Typography align="center" variant="h4">Login</Typography></Grid>
                 <Grid item xs={12}>
                     <TextField
                         label="Email"
@@ -271,9 +351,9 @@ const Login = ({ onSignIn }: LoginProps) => {
             <Paper elevation={24} style={{ padding: '24px' }}>
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={2}>
-                        <Grid item xs={12}><Typography align="center" variant="h4">Gnome Baseball</Typography></Grid>
                         {annotation}
                         {state.errorAlert.visible ? errorAlertElement : null}
+                        {state.captcha ? captchaElement : null}
                     </Grid>
                 </form>
             </Paper>

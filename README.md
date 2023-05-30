@@ -5,6 +5,8 @@ MLB sim is a pet project simulator for predicting game and season results of the
 
 #TODO Credits and thanks
 
+#Access
+
 ### Usage
 The sim is run through a Node.js web server, that can be accessed [here](www.gnomebaseball.com). Disclaimer: the data and models provided are for entertainment and analytics purposes only. I am not responsible for any gambling losses informed by usage of the app.
 

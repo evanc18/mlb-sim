@@ -1,8 +1,9 @@
 import { Grid, TextField, Button, Typography, Link, Paper, Container, Alert } from "@mui/material";
 import { auth, firestore } from '../Firebase';
-import { sendPasswordResetEmail, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, UserCredential } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, UserCredential, sendEmailVerification } from "firebase/auth";
 import { Fragment, useEffect, useState } from "react";
 import Recaptcha from "./Recaptcha";
+import { FormEventHandler } from "react";
 
 interface LoginProps {
     onSignIn: (user: any) => void;
@@ -26,7 +27,7 @@ interface LoginState {
 
 const Login = ({ onSignIn }: LoginProps) => {
 
-    const recaptchaSiteKey = '6LfSduIlAAAAAIXECR84sRwJD-YnNXJ3m9A2BH7V';
+    const recaptchaSiteKey = '6Lf1PUgnAAAAANMbhKuwoOSLAHCU7NmVGjSWTEwQ';
     const errorAlertClear = { visible: false, type: 'error', text: '' };
 
     const [state, setState] = useState<LoginState>({
@@ -35,7 +36,7 @@ const Login = ({ onSignIn }: LoginProps) => {
         password: '',
         confirmPassword: '',
         attempts: 0,
-        captcha: false,
+        captcha: true,
         firstName: '',
         lastName: '',
         favoriteTeam: '',
@@ -45,7 +46,7 @@ const Login = ({ onSignIn }: LoginProps) => {
         mode: 'sign-in'
     });
 
-    const handleSubmit = (event: Event) => {
+    const handleSubmit: FormEventHandler<HTMLFormElement>  = (event) => {
         console.log(state.attempts)
         setState(prevState => ({ ...prevState, attempts: prevState.attempts + 1 }));
         if (state.attempts === 3) {
@@ -56,6 +57,8 @@ const Login = ({ onSignIn }: LoginProps) => {
             handleSignIn();
         } else if (state.mode === 'create-account') {
             handleSignUp();
+        } else if (state.mode === 'verify-account'){
+            handleVerify();
         } else if (state.mode === 'first-time-setup') {
             handleFirstTimeSetup();
         } else if (state.mode === 'reset-password') {
@@ -74,13 +77,19 @@ const Login = ({ onSignIn }: LoginProps) => {
                 }
             });
         } else {
-
             signInWithEmailAndPassword(auth, state.username, state.password)
                 .then(
                     (userCredential: UserCredential) => {
                         const user = userCredential.user;
-                        console.log(`Signed in as ${user.email}`);
-                        onSignIn(user);
+                        if(user != null && !user.emailVerified){
+                            throw 'auth/email-not-verified'
+                        }
+                        if (user != null && user.emailVerified && !user.displayName){
+                            setState({ ...state, errorAlert: errorAlertClear, user: userCredential.user, mode: 'first-time-setup' })
+                        } else if(user != null && user.emailVerified && user.displayName){
+                            console.log(`Signed in as ${user.email}`);
+                            onSignIn(user);
+                        }
                     })
                 .catch(error => {
                     let message = 'Fatal! firebase/auth error in login of user'
@@ -88,8 +97,10 @@ const Login = ({ onSignIn }: LoginProps) => {
                         message = 'Email has been disabled.';
                     } else if (error.code === 'auth/invalid-email') {
                         message = 'Please enter a valid email address.'
-                    } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/wrong-email') {
                         message = 'Email or password incorrect.'
+                    } else if (error.code === 'auth/email-not-verified') {
+                        message = 'Please verify your email first!'
                     }
                     setState({
                         ...state, errorAlert: {
@@ -103,7 +114,6 @@ const Login = ({ onSignIn }: LoginProps) => {
     }
 
     const handleSignUp = () => {
-        debugger;
         if (state.profileCreated) {
             updateProfile(state.user, { displayName: state.firstName })
             onSignIn(state.user)
@@ -112,7 +122,11 @@ const Login = ({ onSignIn }: LoginProps) => {
             createUserWithEmailAndPassword(auth, state.username, state.password)
                 .then(
                     (userCredential: UserCredential) => {
-                        setState({ ...state, errorAlert: errorAlertClear, user: userCredential.user, mode: 'first-time-setup' })
+                        const user = userCredential.user;
+                        if (user!= null && !user.emailVerified) {
+                            sendEmailVerification(user);
+                            setState({...state, errorAlert: errorAlertClear, user: userCredential.user, mode:'verify-email'})
+                        } 
                     })
                 .catch(error => {
                     let message = 'Fatal! firebase/auth error in creation of user'
@@ -134,8 +148,12 @@ const Login = ({ onSignIn }: LoginProps) => {
         }
     }
 
+    const handleVerify = () => {
+
+    }
+
     const handleFirstTimeSetup = () => {
-        setState({ ...state, profileCreated: true }, handleSignUp())
+        setState({ ...state, profileCreated: true })
         //handleSignUp()
     }
 

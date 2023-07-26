@@ -24,8 +24,7 @@ const Recaptcha: React.FC<RecaptchaProps> = ({ sitekey, onVerify }) => {
     };
 
     return (
-        //<div>Fart</div>
-        <div className="g-recaptcha" data-sitekey={sitekey} data-callback={handleVerify}></div>
+        <div className="g-recaptcha" data-sitekey={sitekey}></div>
     );
 };
 

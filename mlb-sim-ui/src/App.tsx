@@ -2,7 +2,7 @@ import React from "react";
 import { Component } from "react";
 import NavBar from "./components/NavBar";
 import Login from "./components/Login";
-import { Container } from "@mui/material";
+import { Button, Container, Grid, Paper } from "@mui/material";
 import './App.css';
 import { auth } from "./Firebase";
 //import splash from './src/assets/SplashScreen.png';
@@ -41,7 +41,22 @@ export default class App extends Component<{}, AppState> {
         } else {
             //const displayName = this.state.user.displayName;
             //const profilePhoto = this.state.user.photoURL;
-            return <NavBar></NavBar>
+            return (
+                <div>
+            <NavBar></NavBar>
+            <Container maxWidth="lg" sx={{ mt:4, mb:4 }}>
+                <Grid container spacing={3}>
+                    {/*Today's Games*/}
+                    <Paper 
+                        sx={{
+                            width:360,
+                        height: 500,}}>
+                      <Button>
+                        jimbo</Button>  
+                    </Paper>
+                </Grid>
+            </Container></div>)
+            
         }
 
     }

@@ -7,7 +7,7 @@ def build_at_bats():
     q_in = []
     sqlgnome = SQLGnome(q_in, DB_PATH, 1, 1)
     sqlgnome.connect_db()
-    data, keys = sqlgnome.filter_rows('statcast',  filter='[game_date] = "2021-11-02"', verbose=False)
+    data, keys = sqlgnome.filter_rows('statcast',  filter='[game_date] = "2023-07-24"', verbose=False)
     data = pd.DataFrame(data=data, columns=keys)
     print(data)
     print(data['events'].unique())

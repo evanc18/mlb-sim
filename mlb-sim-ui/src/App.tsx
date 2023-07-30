@@ -1,5 +1,7 @@
 import React from "react";
 import { Component } from "react";
+import * as ReactDOM from "react-dom/client";
+import { createBrowserRouter, Router, RouterProvider, } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./components/Login";
 import { Button, Container, Grid, Paper } from "@mui/material";
@@ -11,6 +13,7 @@ import { auth } from "./Firebase";
 
 interface AppState {
     user?: any;
+    page?: any;
 }
 
 export default class App extends Component<{}, AppState> {
@@ -18,7 +21,8 @@ export default class App extends Component<{}, AppState> {
     constructor(props: {}) {
         super(props);
         this.state = {
-            user: auth.currentUser
+            user: auth.currentUser,
+            page: null
         };
     }
 
@@ -35,7 +39,7 @@ export default class App extends Component<{}, AppState> {
                     alignItems: 'center',
                     minHeight: '100vh'
                 }}>
-                    <Login onSignIn={user => this.setState({ user })} />
+                    <Login onSignIn={user => this.setState({ user: user, page: null})} />
                 </div>
             )
         } else {
@@ -45,16 +49,6 @@ export default class App extends Component<{}, AppState> {
                 <div>
             <NavBar></NavBar>
             <Container maxWidth="lg" sx={{ mt:4, mb:4 }}>
-                <Grid container spacing={3}>
-                    {/*Today's Games*/}
-                    <Paper 
-                        sx={{
-                            width:360,
-                        height: 500,}}>
-                      <Button>
-                        jimbo</Button>  
-                    </Paper>
-                </Grid>
             </Container></div>)
             
         }

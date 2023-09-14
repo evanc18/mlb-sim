@@ -16,7 +16,6 @@ The sim is run through a Node.js web server, that can be accessed [here](https:/
 
 #TODO Dashboard
 
-#TODO Sim 
 
 #TODO Doc
 
